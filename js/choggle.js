@@ -45,6 +45,7 @@ var LETTER_COUNTS = {
 
 var letters = [];
 var board = null;
+var boardToLetterMap = {};
 var game = new Chess();
 var whiteSquareGrey = "#a9a9a9";
 var blackSquareGrey = "#696969";
@@ -87,10 +88,10 @@ function onDrop(source, target) {
     promotion: "q", // NOTE: always promote to a queen for example simplicity
   });
 
-  moveLetter(source, target);
-
   // illegal move
   if (move === null) return "snapback";
+
+  moveLetter(source, target);
 }
 
 function onMouseoverSquare(square, piece) {
@@ -121,8 +122,19 @@ function onSnapEnd() {
 }
 
 function addLetter(square, letter) {
-  var letter = `<div class="letter-${square}">${letter}</div>`;
-  $(letter).appendTo("#myBoard .square-" + square);
+  var letterElement = `<div class="letter-${square}">${letter}</div>`;
+  $(letterElement).appendTo("#myBoard .square-" + square);
+  boardToLetterMap[square] = letter;
+}
+
+function removeLetter(square) {
+  var existingLetter = $(`#myBoard .square-${square} .letter-${square}`);
+  existingLetter?.remove();
+  boardToLetterMap[square] = undefined;
+}
+
+function getLetter(square) {
+  return boardToLetterMap[square];
 }
 
 function initializeLetterOptions() {
@@ -149,11 +161,75 @@ function initializeBoardWithLetters(board) {
 }
 
 function moveLetter(source, target) {
-  var letter = $(`#myBoard .square-${source} .letter-${source}`);
-  var letterContent = letter.text();
-  console.log(letterContent);
-  letter.remove();
-  addLetter(target, letterContent);
+  const letter = getLetter(source);
+  removeLetter(target);
+  removeLetter(source);
+  addLetter(target, letter);
+}
+
+function findLetterInBoard(letter) {
+  const positions = [];
+  for (const position in boardToLetterMap) {
+    if (
+      boardToLetterMap[position] &&
+      boardToLetterMap[position].toUpperCase() === letter.toUpperCase()
+    ) {
+      positions.push(position);
+    }
+  }
+  return positions;
+}
+
+function convertBoardLocationToCoords(position) {
+  const mapping = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 };
+  return { col: mapping[position[0]], row: position[1] };
+}
+
+function areCoordsAdjacent(position1, position2) {
+  return (
+    Math.abs(position1.row - position2.row) <= 1 &&
+    Math.abs(position1.col - position2.col) <= 1
+  );
+}
+
+function arePositionsAdjacent(position1, position2) {
+  const coords1 = convertBoardLocationToCoords(position1);
+  const coords2 = convertBoardLocationToCoords(position2);
+  return areCoordsAdjacent(coords1, coords2);
+}
+
+function wordInBoard(word) {
+  const stack = [];
+  const firstLetterPositions = findLetterInBoard(word[0]);
+  firstLetterPositions.forEach((position) => {
+    stack.push([position]);
+  });
+  while (stack.length > 0) {
+    const currentPath = stack.pop();
+    if (currentPath.length === word.length) {
+      return true;
+    } else {
+      const nextLetter = word[currentPath.length];
+      const nextPositions = findLetterInBoard(nextLetter, board);
+      nextPositions.forEach((position) => {
+        if (
+          arePositionsAdjacent(currentPath[currentPath.length - 1], position) &&
+          !currentPath.find((pathPosition) => pathPosition === position)
+        ) {
+          stack.push([...currentPath, position]);
+        }
+      });
+    }
+  }
+  return false;
+}
+
+function wordInDict(word) {
+  return DICTIONARY.includes(word.toUpperCase());
+}
+
+function wordIsValid(word) {
+  return word.length > 1 && wordInBoard(word) && wordInDict(word);
 }
 
 var config = {
