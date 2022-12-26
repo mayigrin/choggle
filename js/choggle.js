@@ -95,8 +95,7 @@ function updateUsedWords(word) {
   $("#usedWords").text(usedWords.join(", "));
 }
 
-function saveGameState() {
-  gameStates.push(game.fen());
+function updateLetters() {
   ["a", "b", "c", "d", "e", "f", "g", "h"].forEach((col) => {
     [1, 2, 3, 4, 5, 6, 7, 8].forEach((row) => {
       const square = `${col}${row}`;
@@ -107,6 +106,11 @@ function saveGameState() {
       }
     });
   });
+}
+
+function saveGameState() {
+  gameStates.push(game.fen());
+  updateLetters();
 }
 
 function onDrop(source, target) {
@@ -295,10 +299,11 @@ function undo() {
   gameStates.pop();
   game.load(gameStates[gameStates.length - 1]);
   board.position(game.fen());
+  updateLetters();
 }
 
 function whiteUndo() {
-  if (undos.w > 0) {
+  if (undos.w > 0 && gameStates.length > 1) {
     undos.w -= 1;
     updateUndosUI();
     undo();
@@ -306,7 +311,7 @@ function whiteUndo() {
 }
 
 function blackUndo() {
-  if (undos.b > 0) {
+  if (undos.b > 0 && gameStates.length > 1) {
     undos.b -= 1;
     updateUndosUI();
     undo();
