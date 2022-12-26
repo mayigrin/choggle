@@ -45,7 +45,9 @@ var LETTER_COUNTS = {
 
 var letters = [];
 var board = null;
+var gameStates = [];
 var boardToLetterMap = {};
+var undos = { w: 0, b: 0 };
 var game = new Chess();
 var whiteSquareGrey = "#a9a9a9";
 var blackSquareGrey = "#696969";
@@ -78,6 +80,28 @@ function onDragStart(source, piece) {
   }
 }
 
+function switchTurnUI(switchTo) {
+  if (switchTo === "w") {
+    $("#wordInputContainer").css("top", "95%");
+  } else {
+    $("#wordInputContainer").css("top", "10%");
+  }
+}
+
+function saveGameState() {
+  gameStates.push(game.fen());
+  ["a", "b", "c", "d", "e", "f", "g", "h"].forEach((col) => {
+    [1, 2, 3, 4, 5, 6, 7, 8].forEach((row) => {
+      const square = `${col}${row}`;
+      if (board.position()[square]) {
+        showLetter(square);
+      } else {
+        hideLetter(square);
+      }
+    });
+  });
+}
+
 function onDrop(source, target) {
   removeGreySquares();
 
@@ -90,8 +114,6 @@ function onDrop(source, target) {
 
   // illegal move
   if (move === null) return "snapback";
-
-  moveLetter(source, target);
 }
 
 function onMouseoverSquare(square, piece) {
@@ -119,6 +141,8 @@ function onMouseoutSquare(square, piece) {
 
 function onSnapEnd() {
   board.position(game.fen());
+  saveGameState();
+  switchTurnUI(game.turn());
 }
 
 function addLetter(square, letter) {
@@ -127,14 +151,22 @@ function addLetter(square, letter) {
   boardToLetterMap[square] = letter;
 }
 
-function removeLetter(square) {
+function showLetter(square) {
   var existingLetter = $(`#myBoard .square-${square} .letter-${square}`);
-  existingLetter?.remove();
-  boardToLetterMap[square] = undefined;
+  existingLetter?.show();
+}
+
+function hideLetter(square) {
+  var existingLetter = $(`#myBoard .square-${square} .letter-${square}`);
+  existingLetter?.hide();
 }
 
 function getLetter(square) {
-  return boardToLetterMap[square];
+  var existingLetter = $(`#myBoard .square-${square} .letter-${square}`);
+  if (existingLetter && existingLetter.is(":visible")) {
+    return existingLetter.text();
+  }
+  return false;
 }
 
 function initializeLetterOptions() {
@@ -155,9 +187,13 @@ function popRandomLetter() {
 
 function initializeBoardWithLetters(board) {
   initializeLetterOptions();
-  Object.keys(board.position()).forEach((square) =>
-    addLetter(square, popRandomLetter())
-  );
+  ["a", "b", "c", "d", "e", "f", "g", "h"].forEach((col) => {
+    [1, 2, 3, 4, 5, 6, 7, 8].forEach((row) => {
+      const square = `${col}${row}`;
+      addLetter(square, popRandomLetter());
+    });
+  });
+  saveGameState();
 }
 
 function moveLetter(source, target) {
@@ -172,6 +208,7 @@ function findLetterInBoard(letter) {
   for (const position in boardToLetterMap) {
     if (
       boardToLetterMap[position] &&
+      board.position()[position] &&
       boardToLetterMap[position].toUpperCase() === letter.toUpperCase()
     ) {
       positions.push(position);
@@ -230,6 +267,75 @@ function wordInDict(word) {
 
 function wordIsValid(word) {
   return word.length > 1 && wordInBoard(word) && wordInDict(word);
+}
+
+function updateUndosUI() {
+  $("#undoCounter-w").text(undos.w);
+  $("#undoCounter-b").text(undos.b);
+}
+
+function incrementUndo() {
+  undos[game.turn()] += 1;
+  updateUndosUI();
+}
+
+function undo() {
+  gameStates.pop();
+  game.load(gameStates[gameStates.length - 1]);
+  board.position(game.fen());
+}
+
+function whiteUndo() {
+  if (undos.w > 0) {
+    undos.w -= 1;
+    updateUndosUI();
+    undo();
+  }
+}
+
+function blackUndo() {
+  if (undos.b > 0) {
+    undos.b -= 1;
+    updateUndosUI();
+    undo();
+  }
+}
+
+function switchTurn() {
+  let tokens = game.fen().split(" ");
+  tokens[1] = tokens[1] === "w" ? "b" : "w";
+  game.load(tokens.join(" "));
+
+  switchTurnUI(tokens[1]);
+}
+
+function getReward(length) {
+  incrementUndo();
+  switchTurn();
+  return;
+}
+
+function submitWord() {
+  var word = $("#wordInput").val();
+  const valid = wordIsValid(word);
+
+  if (valid) {
+    $("#valid-word").show();
+    $("#wordInput").css("background-color", "#c0f0cd");
+    setTimeout(() => {
+      getReward(word.length);
+      $("#valid-word").hide();
+      $("#wordInput").css("background-color", "unset");
+    }, 1000);
+  } else {
+    $("#invalid-word").show();
+    $("#wordInput").css("background-color", "#f0c0c0");
+    setTimeout(() => {
+      $("#invalid-word").hide();
+      $("#wordInput").css("background-color", "unset");
+      switchTurn();
+    }, 1000);
+  }
 }
 
 var config = {

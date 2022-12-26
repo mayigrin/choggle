@@ -4,3 +4,44 @@ div[class*=" letter-"] {
   top: 1%;
   right: 5%;
 }
+
+#gameContainer {
+  display: flex;
+  flex-direction: row;
+  height: 600px;
+  position: relative;
+}
+
+#sidebar {
+  padding: 10px;
+}
+
+#instructions {
+  height: 200px;
+  position: absolute;
+  top: calc(50% - 100px);
+}
+
+#wordInputContainer {
+  height: 50px;
+  position: absolute;
+  top: 95%;
+}
+
+#valid-word {
+  color: green;
+  font-weight: 900;
+}
+
+#invalid-word {
+  color: red;
+  font-weight: 900;
+}
+
+.undoContainer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}

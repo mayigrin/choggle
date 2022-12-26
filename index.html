@@ -9,7 +9,52 @@
     <link rel="stylesheet" href="css/choggle.css" />
   </head>
   <body>
-    <div id="myBoard" style="width: 600px"></div>
+    <div id="gameContainer">
+      <div id="boardContainer">
+        <div class="undoContainer">
+          <div class="undoCounterContainer">
+            Undos: <span id="undoCounter-b">0</span>
+          </div>
+          <button onclick="blackUndo()">Undo</button>
+        </div>
+        <div id="myBoard" style="width: 600px"></div>
+        <div class="undoContainer">
+          <div class="undoCounterContainer">
+            Undos: <span id="undoCounter-w">0</span>
+          </div>
+          <button onclick="whiteUndo()">Undo</button>
+        </div>
+      </div>
+      <div id="sidebar">
+        <div id="instructions">
+          <p>
+            Enter a valid word instead of moving a chess piece for one of the
+            following rewards:
+          </p>
+          <ul>
+            <li><strong>2 letters: </strong>Earn an additional undo</li>
+            <li>
+              <strong>3 letters: </strong>Add a piece to your opponent or remove
+              a piece for yourself
+            </li>
+            <li>
+              <strong>4 letters: </strong>Remove a piece from your opponent
+            </li>
+            <li><strong>5 letters: </strong>Add a piece to yourself</li>
+            <li><strong>6 letters: </strong>Swap a piece's color</li>
+          </ul>
+        </div>
+        <div id="wordInputContainer">
+          <label for="wordInput">Enter a word:</label>
+          <div id="inputRow">
+            <input type="text" id="wordInput" name="wordInput" />
+            <button onclick="submitWord()">Submit</button>
+            <span style="display: none" id="valid-word">✓</span>
+            <span style="display: none" id="invalid-word">X</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- SCRIPTS -->
     <script
