@@ -16,10 +16,9 @@ div[class*=" letter-"] {
   padding: 10px;
 }
 
-#instructions {
-  height: 200px;
+#info {
   position: absolute;
-  top: calc(50% - 100px);
+  top: 30%;
 }
 
 #wordInputContainer {

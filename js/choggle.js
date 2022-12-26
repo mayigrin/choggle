@@ -47,6 +47,7 @@ var letters = [];
 var board = null;
 var gameStates = [];
 var boardToLetterMap = {};
+var usedWords = [];
 var undos = { w: 0, b: 0 };
 var game = new Chess();
 var whiteSquareGrey = "#a9a9a9";
@@ -86,6 +87,12 @@ function switchTurnUI(switchTo) {
   } else {
     $("#wordInputContainer").css("top", "10%");
   }
+  $("#wordInput").val("");
+}
+
+function updateUsedWords(word) {
+  usedWords.push(word);
+  $("#usedWords").text(usedWords.join(", "));
 }
 
 function saveGameState() {
@@ -266,7 +273,12 @@ function wordInDict(word) {
 }
 
 function wordIsValid(word) {
-  return word.length > 1 && wordInBoard(word) && wordInDict(word);
+  return (
+    word.length > 1 &&
+    !usedWords.includes(word) &&
+    wordInBoard(word) &&
+    wordInDict(word)
+  );
 }
 
 function updateUndosUI() {
@@ -316,13 +328,14 @@ function getReward(length) {
 }
 
 function submitWord() {
-  var word = $("#wordInput").val();
+  var word = $("#wordInput").val().toUpperCase();
   const valid = wordIsValid(word);
 
   if (valid) {
     $("#valid-word").show();
     $("#wordInput").css("background-color", "#c0f0cd");
     setTimeout(() => {
+      updateUsedWords(word);
       getReward(word.length);
       $("#valid-word").hide();
       $("#wordInput").css("background-color", "unset");
