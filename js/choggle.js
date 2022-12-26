@@ -1,57 +1,4 @@
-/*
-
-===== Name
-Highlight Legal Moves
-
-===== Description
-Use the <code class="js plain"><a href="docs.html#config:onMouseoverSquare">onMouseoverSquare</a></code> and <code class="js plain"><a href="docs.html#config:onMouseoutSquare">onMouseoutSquare</a></code> events to highlight legal squares.
-
-===== HTML
-<div id="myBoard" style="width: 400px"></div>
-
-
-===== JS
-// NOTE: this example uses the chess.js library:
-// https://github.com/jhlywa/chess.js
-*/
-var LETTER_COUNTS = {
-  A: 9,
-  B: 2,
-  C: 2,
-  D: 4,
-  E: 12,
-  F: 2,
-  G: 3,
-  H: 2,
-  I: 9,
-  J: 1,
-  K: 1,
-  L: 4,
-  M: 2,
-  N: 6,
-  O: 8,
-  P: 2,
-  Q: 1,
-  R: 6,
-  S: 4,
-  T: 6,
-  U: 4,
-  V: 2,
-  W: 2,
-  X: 1,
-  Y: 2,
-  Z: 1,
-};
-
-var letters = [];
-var board = null;
-var gameStates = [];
-var boardToLetterMap = {};
-var usedWords = [];
-var undos = { w: 0, b: 0 };
-var game = new Chess();
-var whiteSquareGrey = "#a9a9a9";
-var blackSquareGrey = "#696969";
+// ==== Chess UI & Logic ====
 
 function removeGreySquares() {
   $("#myBoard .square-55d63").css("background", "");
@@ -79,38 +26,6 @@ function onDragStart(source, piece) {
   ) {
     return false;
   }
-}
-
-function switchTurnUI(switchTo) {
-  if (switchTo === "w") {
-    $("#wordInputContainer").css("top", "95%");
-  } else {
-    $("#wordInputContainer").css("top", "10%");
-  }
-  $("#wordInput").val("");
-}
-
-function updateUsedWords(word) {
-  usedWords.push(word);
-  $("#usedWords").text(usedWords.join(", "));
-}
-
-function updateLetters() {
-  ["a", "b", "c", "d", "e", "f", "g", "h"].forEach((col) => {
-    [1, 2, 3, 4, 5, 6, 7, 8].forEach((row) => {
-      const square = `${col}${row}`;
-      if (board.position()[square]) {
-        showLetter(square);
-      } else {
-        hideLetter(square);
-      }
-    });
-  });
-}
-
-function saveGameState() {
-  gameStates.push(game.fen());
-  updateLetters();
 }
 
 function onDrop(source, target) {
@@ -156,6 +71,13 @@ function onSnapEnd() {
   switchTurnUI(game.turn());
 }
 
+function saveGameState() {
+  gameStates.push(game.fen());
+  updateLetters();
+}
+
+// ==== Letter Handling ====
+
 function addLetter(square, letter) {
   var letterElement = `<div class="letter-${square}">${letter}</div>`;
   $(letterElement).appendTo("#myBoard .square-" + square);
@@ -172,12 +94,24 @@ function hideLetter(square) {
   existingLetter?.hide();
 }
 
-function getLetter(square) {
-  var existingLetter = $(`#myBoard .square-${square} .letter-${square}`);
-  if (existingLetter && existingLetter.is(":visible")) {
-    return existingLetter.text();
-  }
-  return false;
+function updateLetters() {
+  ["a", "b", "c", "d", "e", "f", "g", "h"].forEach((col) => {
+    [1, 2, 3, 4, 5, 6, 7, 8].forEach((row) => {
+      const square = `${col}${row}`;
+      if (board.position()[square]) {
+        showLetter(square);
+      } else {
+        hideLetter(square);
+      }
+    });
+  });
+}
+
+function popRandomLetter() {
+  const index = Math.floor(Math.random() * letters.length);
+  const letter = letters[index];
+  letters.splice(index, 1); // Remove the item from the array
+  return letter;
 }
 
 function initializeLetterOptions() {
@@ -187,13 +121,6 @@ function initializeLetterOptions() {
       letters.push(letter);
     }
   }
-}
-
-function popRandomLetter() {
-  const index = Math.floor(Math.random() * letters.length);
-  const letter = letters[index];
-  letters.splice(index, 1); // Remove the item from the array
-  return letter;
 }
 
 function initializeBoardWithLetters(board) {
@@ -207,82 +134,15 @@ function initializeBoardWithLetters(board) {
   saveGameState();
 }
 
-function moveLetter(source, target) {
-  const letter = getLetter(source);
-  removeLetter(target);
-  removeLetter(source);
-  addLetter(target, letter);
-}
+// ==== UI Management ====
 
-function findLetterInBoard(letter) {
-  const positions = [];
-  for (const position in boardToLetterMap) {
-    if (
-      boardToLetterMap[position] &&
-      board.position()[position] &&
-      boardToLetterMap[position].toUpperCase() === letter.toUpperCase()
-    ) {
-      positions.push(position);
-    }
+function switchTurnUI(switchTo) {
+  if (switchTo === "w") {
+    $("#wordInputContainer").css("top", "95%");
+  } else {
+    $("#wordInputContainer").css("top", "10%");
   }
-  return positions;
-}
-
-function convertBoardLocationToCoords(position) {
-  const mapping = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 };
-  return { col: mapping[position[0]], row: position[1] };
-}
-
-function areCoordsAdjacent(position1, position2) {
-  return (
-    Math.abs(position1.row - position2.row) <= 1 &&
-    Math.abs(position1.col - position2.col) <= 1
-  );
-}
-
-function arePositionsAdjacent(position1, position2) {
-  const coords1 = convertBoardLocationToCoords(position1);
-  const coords2 = convertBoardLocationToCoords(position2);
-  return areCoordsAdjacent(coords1, coords2);
-}
-
-function wordInBoard(word) {
-  const stack = [];
-  const firstLetterPositions = findLetterInBoard(word[0]);
-  firstLetterPositions.forEach((position) => {
-    stack.push([position]);
-  });
-  while (stack.length > 0) {
-    const currentPath = stack.pop();
-    if (currentPath.length === word.length) {
-      return true;
-    } else {
-      const nextLetter = word[currentPath.length];
-      const nextPositions = findLetterInBoard(nextLetter, board);
-      nextPositions.forEach((position) => {
-        if (
-          arePositionsAdjacent(currentPath[currentPath.length - 1], position) &&
-          !currentPath.find((pathPosition) => pathPosition === position)
-        ) {
-          stack.push([...currentPath, position]);
-        }
-      });
-    }
-  }
-  return false;
-}
-
-function wordInDict(word) {
-  return DICTIONARY.includes(word.toUpperCase());
-}
-
-function wordIsValid(word) {
-  return (
-    word.length > 1 &&
-    !usedWords.includes(word) &&
-    wordInBoard(word) &&
-    wordInDict(word)
-  );
+  $("#wordInput").val("");
 }
 
 function updateUndosUI() {
@@ -300,13 +160,15 @@ function undo() {
   game.load(gameStates[gameStates.length - 1]);
   board.position(game.fen());
   updateLetters();
+  return game.fen().split(" ")[1];
 }
 
 function whiteUndo() {
   if (undos.w > 0 && gameStates.length > 1) {
     undos.w -= 1;
     updateUndosUI();
-    undo();
+    const current_turn = undo();
+    switchTurnUI(current_turn);
   }
 }
 
@@ -314,7 +176,8 @@ function blackUndo() {
   if (undos.b > 0 && gameStates.length > 1) {
     undos.b -= 1;
     updateUndosUI();
-    undo();
+    const current_turn = undo();
+    switchTurnUI(current_turn);
   }
 }
 
@@ -324,12 +187,6 @@ function switchTurn() {
   game.load(tokens.join(" "));
 
   switchTurnUI(tokens[1]);
-}
-
-function getReward(length) {
-  incrementUndo();
-  switchTurn();
-  return;
 }
 
 function submitWord() {
@@ -354,6 +211,22 @@ function submitWord() {
       switchTurn();
     }, 1000);
   }
+}
+
+function modifySquareInGame(position, piece, color) {
+  const tokens = game.fen().split(" ");
+  const newFen = setValueInFen(tokens[0], position, piece, color);
+  tokens[0] = newFen;
+  console.log(tokens.join(" "));
+  game.load(tokens.join(" "));
+  board.position(game.fen());
+  saveGameState();
+}
+
+function getReward(length) {
+  incrementUndo();
+  switchTurn();
+  return;
 }
 
 var config = {
